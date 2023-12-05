@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './index.css';
 import TransactionsTable from './TransactionsTable';
 import BubbleChartContainer from './BubbleChartContainer';
@@ -13,7 +13,7 @@ function App() {
     const [dextoolsLink, setDextoolsLink] = useState('');
 
     const maxTransactions = 1000; 
-    const timeWindow = 10 * 60 * 1000; 
+    const timeWindow = 10 * 60 * 1000; // 10 minutes
 
     const filterOldTransactions = (transactions) => {
         const now = Date.now();
@@ -21,73 +21,76 @@ function App() {
                            .slice(0, maxTransactions);
     };
 
-    // Fetch all transactions once and store them
-	useEffect(() => {
-	    const fetchAllTransactions = async () => {
-	        try {
-	            const response = await fetch(`${process.env.REACT_APP_API_URL}/transactions`);
-	            const data = await response.json();
-	            setAllTransactions(filterOldTransactions(data));
-	        } catch (error) {
-	            console.error('Error fetching all transactions:', error);
-	        }
-	    };
+    useEffect(() => {
+        const fetchAllTransactions = async () => {
+            try {
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/transactions`);
+                const data = await response.json();
+                setAllTransactions(data);
+            } catch (error) {
+                console.error('Error fetching all transactions:', error);
+            }
+        };
 
-	    fetchAllTransactions();
-	}, []);
-
-	// Fetch recent transactions once and store them
-	useEffect(() => {
-	    const fetchRecentTransactions = async () => {
-	        try {
-	            const response = await fetch(`${process.env.REACT_APP_API_URL}/get_recent_transactions`);
-	            const data = await response.json();
-	            setRecentTransactions(filterOldTransactions(data));
-	        } catch (error) {
-	            console.error('Error fetching recent transactions:', error);
-	        }
-	    };
-
-	    fetchRecentTransactions();
-	}, []);
-
-
+        fetchAllTransactions();
+    }, []);
 
     useEffect(() => {
-	    if (selectedToken) {
-	        const filteredAllTransactions = allTransactions.filter(tx => tx.token === selectedToken);
-	        const filteredRecentTransactions = recentTransactions.filter(tx => tx.token === selectedToken);
-	        
-	        const allTimeEth = filteredAllTransactions.reduce((acc, tx) => acc + tx.eth_balance, 0);
-	        const allTimeTransactions = filteredAllTransactions.length;
-	        const tenMinEth = filteredRecentTransactions.reduce((acc, tx) => acc + tx.eth_balance, 0);
-	        const tenMinTransactions = filteredRecentTransactions.length;
+        const fetchRecentTransactions = async () => {
+            try {
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/get_recent_transactions`);
+                const data = await response.json();
+                setRecentTransactions(filterOldTransactions(data));
+            } catch (error) {
+                console.error('Error fetching recent transactions:', error);
+            }
+        };
 
-	        // Find a transaction with the selected token to get the Dextools link
-	        const tokenTransaction = allTransactions.find(tx => tx.token === selectedToken);
-	        const newDextoolsLink = tokenTransaction ? tokenTransaction.dextools_link : '';
+        fetchRecentTransactions();
+    }, []);
 
-	        setTokenInfo({
-	            contract: selectedToken,
-	            allTimeEth: allTimeEth.toFixed(2),
-	            allTimeTransactions,
-	            tenMinEth: tenMinEth.toFixed(2),
-	            tenMinTransactions,
-	            dextoolsLink: newDextoolsLink // Include the Dextools link here
-	        });
+    const processedTransactions = useMemo(() => {
+        const transactionData = allTransactions.reduce((acc, tx) => {
+            const txData = acc[tx.token] || { allTimeEth: 0, allTimeTransactions: 0, dextoolsLink: '' };
 
-	        setDextoolsLink(newDextoolsLink); // Update Dextools link
-	    }
-	}, [selectedToken, allTransactions, recentTransactions]);
+            txData.allTimeEth += tx.eth_balance;
+            txData.allTimeTransactions += 1;
+            txData.dextoolsLink = tx.dextools_link || txData.dextoolsLink;
 
+            acc[tx.token] = txData;
+            return acc;
+        }, {});
+
+        return transactionData;
+    }, [allTransactions]);
+
+    useEffect(() => {
+        if (selectedToken) {
+            const allTimeData = processedTransactions[selectedToken] || { allTimeEth: 0, allTimeTransactions: 0, dextoolsLink: '' };
+            const filteredRecentTransactions = recentTransactions.filter(tx => tx.token === selectedToken);
+            const tenMinEth = filteredRecentTransactions.reduce((acc, tx) => acc + tx.eth_balance, 0);
+            const tenMinTransactions = filteredRecentTransactions.length;
+
+            setTokenInfo({
+                contract: selectedToken,
+                allTimeEth: allTimeData.allTimeEth.toFixed(2),
+                allTimeTransactions: allTimeData.allTimeTransactions,
+                tenMinEth: tenMinEth.toFixed(2),
+                tenMinTransactions,
+                dextoolsLink: allTimeData.dextoolsLink
+            });
+
+            setDextoolsLink(allTimeData.dextoolsLink);
+        }
+    }, [selectedToken, processedTransactions, recentTransactions]);
 
     return (
         <div className="App">
             <div className="top-section" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ width: '50%', height: '550px' }}> {/* Set a fixed height */}
-                    <BubbleChartContainer onTokenSelect={setSelectedToken} />
+                <div style={{ width: '50%', height: '550px' }}> 
+                    <BubbleChartContainer onTokenSelect={setSelectedToken} recentTransactions={recentTransactions} />
                 </div>
-                <div style={{ width: '50%', height: '550px' }}> {/* Set a fixed height */}
+                <div style={{ width: '50%', height: '550px' }}> 
                     <DEXToolsWidget dextoolsLink={dextoolsLink} />
                 </div>
             </div>
@@ -96,6 +99,5 @@ function App() {
         </div>
     );
 }
-
 
 export default App;

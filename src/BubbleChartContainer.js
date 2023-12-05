@@ -1,25 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as d3 from 'd3';
 import axios from 'axios';
 
 function BubbleChartContainer({ onTokenSelect }) {
     const bubbleChartRef = useRef();
     const [isLoading, setIsLoading] = useState(false);
-
-    const fetchAndCreateBubbles = () => {
-        setIsLoading(true); // Start loading
-        axios.get('http://80.78.22.225/get_recent_transactions')
-            .then(response => {
-                createBubbles(response.data);
-            })
-            .catch(error => {
-                console.error('Error fetching recent transactions:', error);
-            })
-            .finally(() => {
-                setTimeout(() => setIsLoading(false), 7000); // Stop loading after 7 seconds
-            });
-    };
-
     const createBubbles = (transactions) => {
         const tokenData = transactions.reduce((acc, tx) => {
             acc[tx.token] = (acc[tx.token] || 0) + 1;
@@ -56,21 +41,35 @@ function BubbleChartContainer({ onTokenSelect }) {
 
             bubbles.append("text")
                 .attr("class", "bubble-text")
-                .style("text-anchor", "middle") // Center the text horizontally
-                .style("alignment-baseline", "central") // Center the text vertically
+                .style("text-anchor", "middle")
+                .style("alignment-baseline", "central")
                 .style("font-size", d => `${radiusScale(d.count) / 4}px`)
                 .text(d => d.token.slice(0, 6) + '...' + d.token.slice(-4))
-                .attr("dy", d => `-${radiusScale(d.count) / 10}px`) // Adjust this value to better position text vertically
-                .on("click", (event, d) => onTokenSelect(d.token)); // Make text clickable
+                .attr("dy", d => `-${radiusScale(d.count) / 10}px`)
+                .on("click", (event, d) => onTokenSelect(d.token));
         }
-
-
-
     };
+
+    const fetchAndCreateBubbles = useCallback(() => {
+        setIsLoading(true); // Start loading
+        axios.get(`${process.env.REACT_APP_API_URL}/get_recent_transactions`)
+            .then(response => {
+                createBubbles(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching recent transactions:', error);
+            })
+            .finally(() => {
+                // Delay setting isLoading to false for 7 seconds
+                setTimeout(() => {
+                    setIsLoading(false); // Stop loading after 7 seconds
+                }, 7000); // 7 seconds in milliseconds
+            });
+    }, []);
 
     useEffect(() => {
         fetchAndCreateBubbles();
-    }, []);
+    }, [fetchAndCreateBubbles]);
 
     return (
         <div className="bubble-chart-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', position: 'relative', marginLeft: '20%' }}>
@@ -86,6 +85,5 @@ function BubbleChartContainer({ onTokenSelect }) {
         </div>
     );
 }
-
 
 export default BubbleChartContainer;

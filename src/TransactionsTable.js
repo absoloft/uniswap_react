@@ -6,24 +6,25 @@ function TransactionsTable() {
     const [copyButtonTexts, setCopyButtonTexts] = useState({});
 
     useEffect(() => {
-        const fetchTransactions = () => {
-            axios.get('http://80.78.22.225/transactions')
-                .then(response => {
-                    setTransactions(response.data);
-                    // Reset copy button texts
-                    const initialCopyTexts = response.data.reduce((acc, tx, index) => {
-                        acc[index] = 'Copy Dextools Link';
-                        return acc;
-                    }, {});
-                    setCopyButtonTexts(initialCopyTexts);
-                })
-                .catch(error => console.error('Error fetching transactions:', error));
-        };
+    const fetchTransactions = async () => {
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/transactions`);
+            setTransactions(response.data);
 
-        fetchTransactions();
-        const intervalId = setInterval(fetchTransactions, 10000);
-        return () => clearInterval(intervalId);
-    }, []);
+            // Reset copy button texts
+            const initialCopyTexts = response.data.reduce((acc, tx, index) => {
+                acc[index] = 'Copy Dextools Link';
+                return acc;
+            }, {});
+            setCopyButtonTexts(initialCopyTexts);
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+        }
+    };
+
+    fetchTransactions();
+}, []);
+
 
     const copyToClipboard = (text, index) => {
         navigator.clipboard.writeText(text)
