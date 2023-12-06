@@ -85,19 +85,20 @@ function App() {
     }, [selectedToken, processedTransactions, recentTransactions]);
 
     return (
-        <div className="App">
-            <div className="top-section" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ width: '50%', height: '550px' }}> 
-                    <BubbleChartContainer onTokenSelect={setSelectedToken} recentTransactions={recentTransactions} />
-                </div>
-                <div style={{ width: '50%', height: '550px' }}> 
-                    <DEXToolsWidget dextoolsLink={dextoolsLink} />
-                </div>
-            </div>
-            <TokenInfo tokenData={tokenInfo} />
-            <TransactionsTable transactions={allTransactions} />
-        </div>
-    );
+	    <div className="App">
+	        <div className="top-section" style={{ display: 'flex', justifyContent: 'space-between' }}>
+	            <div style={{ width: '50%', height: '550px' }}> 
+	                <BubbleChartContainer onTokenSelect={setSelectedToken} recentTransactions={recentTransactions} />
+	            </div>
+	            <div style={{ width: '50%', height: '550px' }}> 
+	                {/* Add key prop here */}
+	                <DEXToolsWidget key={dextoolsLink} dextoolsLink={dextoolsLink} />
+	            </div>
+	        </div>
+	        <TokenInfo tokenData={tokenInfo} />
+	        <TransactionsTable transactions={allTransactions} />
+	    </div>
+	);
 }
 
 export default App;
