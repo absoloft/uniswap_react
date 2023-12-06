@@ -80,7 +80,7 @@ function App() {
                 dextoolsLink: allTimeData.dextoolsLink
             });
 
-            setDextoolsLink(allTimeData.dextoolsLink);
+            setDextoolsLink(selectedToken);
         }
     }, [selectedToken, processedTransactions, recentTransactions]);
 
