@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import './index.css';
 import TransactionsTable from './TransactionsTable';
 import BubbleChartContainer from './BubbleChartContainer';
 import TokenInfo from './TokenInfo';
 import DEXToolsWidget from './DEXToolsWidget';
+import getUniswapPairAddress from './utils/getUniswapPairAddress';
 
 function App() {
     const [selectedToken, setSelectedToken] = useState(null);
@@ -79,26 +80,29 @@ function App() {
                 tenMinTransactions,
                 dextoolsLink: allTimeData.dextoolsLink
             });
-
-            setDextoolsLink(selectedToken);
         }
     }, [selectedToken, processedTransactions, recentTransactions]);
 
+    const onTokenSelect = useCallback(async (token) => {
+	    const pairAddress = await getUniswapPairAddress(token);
+	    setDextoolsLink(pairAddress);
+	}, []);
+
+
     return (
-	    <div className="App">
-	        <div className="top-section" style={{ display: 'flex', justifyContent: 'space-between' }}>
-	            <div style={{ width: '50%', height: '550px' }}> 
-	                <BubbleChartContainer onTokenSelect={setSelectedToken} recentTransactions={recentTransactions} />
-	            </div>
-	            <div style={{ width: '50%', height: '550px' }}> 
-	                {/* Add key prop here */}
-	                <DEXToolsWidget key={dextoolsLink} dextoolsLink={dextoolsLink} />
-	            </div>
-	        </div>
-	        <TokenInfo tokenData={tokenInfo} />
-	        <TransactionsTable transactions={allTransactions} />
-	    </div>
-	);
+        <div className="App">
+            <div className="top-section" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ width: '50%', height: '550px' }}> 
+                    <BubbleChartContainer onTokenSelect={onTokenSelect} recentTransactions={recentTransactions} />
+                </div>
+                <div style={{ width: '50%', height: '550px' }}> 
+                    <DEXToolsWidget key={dextoolsLink} dextoolsLink={dextoolsLink} />
+                </div>
+            </div>
+            <TokenInfo tokenData={tokenInfo} />
+            <TransactionsTable transactions={allTransactions} />
+        </div>
+    );
 }
 
 export default App;
