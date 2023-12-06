@@ -51,7 +51,7 @@ function App() {
     }, []);
 
     const processedTransactions = useMemo(() => {
-        const transactionData = allTransactions.reduce((acc, tx) => {
+        return allTransactions.reduce((acc, tx) => {
             const txData = acc[tx.token] || { allTimeEth: 0, allTimeTransactions: 0, dextoolsLink: '' };
 
             txData.allTimeEth += tx.eth_balance;
@@ -61,11 +61,16 @@ function App() {
             acc[tx.token] = txData;
             return acc;
         }, {});
-
-        return transactionData;
     }, [allTransactions]);
 
+    const onTokenSelect = useCallback(async (token) => {
+        setSelectedToken(token); // This is important to trigger the useEffect below
+        const pairAddress = await getUniswapPairAddress(token);
+        setDextoolsLink(pairAddress);
+    }, []);
+
     useEffect(() => {
+        // This useEffect is now responsible for updating tokenInfo when selectedToken changes
         if (selectedToken) {
             const allTimeData = processedTransactions[selectedToken] || { allTimeEth: 0, allTimeTransactions: 0, dextoolsLink: '' };
             const filteredRecentTransactions = recentTransactions.filter(tx => tx.token === selectedToken);
@@ -82,12 +87,6 @@ function App() {
             });
         }
     }, [selectedToken, processedTransactions, recentTransactions]);
-
-    const onTokenSelect = useCallback(async (token) => {
-	    const pairAddress = await getUniswapPairAddress(token);
-	    setDextoolsLink(pairAddress);
-	}, []);
-
 
     return (
         <div className="App">
