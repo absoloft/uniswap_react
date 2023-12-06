@@ -1,7 +1,7 @@
 import React from 'react';
 
 function DEXToolsWidget({ dextoolsLink }) {
-    const dextoolsURL = `https://www.dextools.io/widget-chart/en/ether/pe-light/${dextoolsLink}?theme=light&chartType=2&chartResolution=30&drawingToolbars=false`;
+    const dextoolsURL = `https://www.dextools.io/widget-chart/en/ether/pe-light/${dextoolsLink}?theme=light&chartType=1&chartResolution=5&drawingToolbars=false`;
     
     return (
         <div className="dextools-widget-container">
